@@ -1,0 +1,61 @@
+version: "3.8"
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: sh -c "npm install && npm run start:dev"
+    restart: "no"
+    env_file:
+      - ".env"
+    volumes:
+      - ./api:/app
+    ports:
+      - "4001:3000"
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    restart: "no"
+    env_file:
+      - ".env"
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "4000:5173"
+  neo4j:
+    image: neo4j:3.5
+    restart: unless-stopped
+    env_file:
+      - ".env"
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+      - neo4j-logs:/logs
+      - ./neo4j-plugins:/plugins
+    environment:
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_whitelist=apoc.*
+  neo4j-test:
+    image: neo4j:3.5
+    restart: unless-stopped
+    env_file:
+      - ".env"
+    ports:
+      - "7575:7474"
+      - "7688:7687"
+    volumes:
+      - neo4j-test-data:/data
+      - neo4j-test-logs:/logs
+      - ./neo4j-plugins:/plugins
+    environment:
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_procedures_whitelist=apoc.*
+volumes:
+  neo4j-data:
+  neo4j-logs:
+  neo4j-test-data:
+  neo4j-test-logs:
