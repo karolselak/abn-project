@@ -6,7 +6,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getAll(): string {
-    return this.appService.getAll();
+  async getAll(): Promise<string | void> {
+    return await this.appService.getAll();
   }
 }
