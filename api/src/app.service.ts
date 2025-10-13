@@ -24,9 +24,6 @@ export class AppService {
       return JSON.stringify(transformedRows);
     } catch (error) {
       console.error('Error during Neo4j connection:', error);
-    } finally {
-      await session.close();
-      await driver.close();
     }
   }
 }

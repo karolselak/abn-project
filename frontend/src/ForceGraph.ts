@@ -10,6 +10,7 @@ export interface ForceGraphOptions {
   zoom?: number
   arcBend?: number // 0..1 for arc curvature
   arrowAngleOffset?: number // degrees
+  onNodeClick?: (id: string) => void
 }
 
 export class ForceGraph {
@@ -23,12 +24,14 @@ export class ForceGraph {
 
   constructor(container: HTMLElement, opts?: ForceGraphOptions) {
     this.container = container
+
     this.options = {
       width: opts?.width ?? 300,
       height: opts?.height ?? 300,
       zoom: opts?.zoom ?? 2,
       arcBend: opts?.arcBend ?? 0.4,
-      arrowAngleOffset: opts?.arrowAngleOffset ?? -10
+      arrowAngleOffset: opts?.arrowAngleOffset ?? -10,
+      onNodeClick: opts?.onNodeClick ?? (() => {}),
     }
   }
 
@@ -38,10 +41,12 @@ export class ForceGraph {
     const viewBoxHeight = height / zoom
 
     const types = Array.from(new Set(linksInput.map(d => d.type)))
+
     const nodes: NodeDatum[] = Array.from(
       new Set(linksInput.flatMap(l => [l.source, l.target])),
       id => ({ id })
     )
+
     const links: LinkDatum[] = linksInput.map(d => ({ ...d }))
 
     this.color = d3.scaleOrdinal(types, d3.schemeCategory10)
@@ -51,7 +56,6 @@ export class ForceGraph {
       .attr('viewBox', [-viewBoxWidth / 2, -viewBoxHeight / 2, viewBoxWidth, viewBoxHeight])
       .attr('width', width)
       .attr('height', height)
-      .attr('style', 'font: 12px sans-serif;')
 
     this.container.appendChild(this.svg.node()!)
 
@@ -85,15 +89,30 @@ export class ForceGraph {
       .data(nodes)
       .join('g')
 
-    this.nodeSelection.append('circle')
-      .attr('r', 4)
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1.5)
+    this.nodeSelection.append('circle').attr('r', 4)
 
     this.nodeSelection.append('text')
       .attr('x', 8)
       .attr('y', '0.31em')
       .text(d => d.id)
+
+    this.nodeSelection.on('click', (event: any, node: { id: string }) => {
+      this.onNodeClick(node.id);
+      
+      this.nodeSelection.select('circle')
+        .attr('fill', null)
+        .attr('r', 4)
+
+      this.nodeSelection.select('text')
+        .attr('fill', null);
+
+      d3.select(event.currentTarget).select('circle')
+        .attr('fill', 'green')
+        .attr('r', 6)
+
+      d3.select(event.currentTarget).select('text')
+        .attr('fill', 'green');
+    });
 
     this.simulation = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(links).id(d => d.id))
@@ -111,6 +130,10 @@ export class ForceGraph {
   public destroy() {
     this.simulation?.stop()
     this.container.innerHTML = ''
+  }
+
+  private onNodeClick(id: string) {
+    this.options.onNodeClick(id)
   }
 
   private linkPath(d: LinkDatum): string {
