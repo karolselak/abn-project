@@ -89,12 +89,16 @@ export class ForceGraph {
       .data(nodes)
       .join('g')
 
-    this.nodeSelection.append('circle').attr('r', 4)
+    this.nodeSelection.append('circle')
+      .attr('r', 4)
+      .attr('cursor', 'pointer')
 
     this.nodeSelection.append('text')
       .attr('x', 8)
       .attr('y', '0.31em')
       .text(d => d.id)
+      .attr('cursor', 'pointer')
+
 
     this.nodeSelection.on('click', (event: any, node: { id: string }) => {
       this.onNodeClick(node.id);

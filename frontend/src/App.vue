@@ -17,7 +17,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 let nodesMap = ref<Map<string, Node>>(null)
 let abortController: AbortController = null
-let highlightedNode = ref<Node | null>(null);
+let selectedNode = ref<Node | null>(null);
 
 function normalizeToLinks(payload: Node[]): Link[] {
   return payload
@@ -57,7 +57,7 @@ async function loadData() {
 }
 
 function onNodeClick(id: string) {
-  highlightedNode.value = nodesMap.get(id)
+  selectedNode.value = nodesMap.get(id)
 }
 
 onMounted(async () => {
@@ -87,34 +87,49 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
-    <h1>Graph viewer</h1>
-    <div>
-      <button @click="() => (loading ? null : (error = null, (async () => await (loadData()))()))" :disabled="loading">
-        {{ loading ? 'Loading…' : 'Refresh' }}
-      </button>
-      <span v-if="error" style="color: #c00;">Error: {{ error }}</span>
-    </div>
-    <div class="chartWrapper" ref="chartWrapper"></div>
-    <div v-if="highlightedNode">
-      <h2>Node Details</h2>
-      <p><strong>Name:</strong> {{ highlightedNode.name }}</p>
-      <p><strong>Description:</strong> {{ highlightedNode.description }}</p>
-      <p><strong>Parent:</strong> {{ highlightedNode.parent || 'None' }}</p>
-    </div>
+  <div class="wrapper">
+    <aside class="sidebar">
+      <h1>Graph viewer</h1>
+      <div>
+        <button @click="() => (loading ? null : (error = null, (async () => await (loadData()))()))" :disabled="loading">
+          {{ loading ? 'Loading…' : 'Refresh' }}
+        </button>
+        <span v-if="error" style="color: #c00;">Error: {{ error }}</span>
+      </div>
+      <div v-if="selectedNode">
+        <p><strong>Name:</strong> {{ selectedNode.name }}</p>
+        <p><strong>Description:</strong> {{ selectedNode.description }}</p>
+        <p><strong>Parent:</strong> {{ selectedNode.parent || '-' }}</p>
+      </div>
+    </aside>
+
+    <main class="chartWrapper" ref="chartWrapper">
+    </main>
   </div>
 </template>
 
+<style>
+body {
+  margin: 0px !important;
+}
+</style>
 <style scoped>
 * {
   font-family: sans-serif;
 }
-.chartWrapper {
-  border: 1px solid #ccc;
+.wrapper {
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+}
+.sidebar {
+  width: 250px;
+  padding: 15px;
+  border-right: 1px solid #ccc;
+  background-color: #f5f5f5;
 }
 .chartWrapper :deep(svg) {
   background-color: #f9f9f9;
-  border: 1px solid #ccc;
-  font: 12px sans-serif;
+  font-size: 12px;
 }
 </style>
