@@ -66,8 +66,6 @@ onMounted(async () => {
   }
 
   graph = new ForceGraph(chartWrapper.value, {
-    width: 800,
-    height: 600,
     arcBend: 0.4,
     arrowAngleOffset: -10,
     onNodeClick: onNodeClick,
@@ -126,9 +124,18 @@ body {
   width: 250px;
   padding: 15px;
   border-right: 1px solid #ccc;
-  background-color: #f5f5f5;
+  background-color: #e7e7e7ff;
+}
+.chartWrapper {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative; /* wygodne w wielu przypadkach */
 }
 .chartWrapper :deep(svg) {
+  width: 100%;
+  height: 100%;
+  display: block;
   background-color: #f9f9f9;
   font-size: 12px;
 }

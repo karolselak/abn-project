@@ -26,9 +26,9 @@ export class ForceGraph {
     this.container = container
 
     this.options = {
-      width: opts?.width ?? 300,
-      height: opts?.height ?? 300,
-      zoom: opts?.zoom ?? 2,
+      width: opts?.width ?? 600,
+      height: opts?.height ?? 600,
+      zoom: opts?.zoom ?? 1.5,
       arcBend: opts?.arcBend ?? 0.4,
       arrowAngleOffset: opts?.arrowAngleOffset ?? -10,
       onNodeClick: opts?.onNodeClick ?? (() => {}),
@@ -54,8 +54,6 @@ export class ForceGraph {
     this.container.innerHTML = ''
     this.svg = d3.create('svg')
       .attr('viewBox', [-viewBoxWidth / 2, -viewBoxHeight / 2, viewBoxWidth, viewBoxHeight])
-      .attr('width', width)
-      .attr('height', height)
 
     this.container.appendChild(this.svg.node()!)
 
@@ -111,11 +109,11 @@ export class ForceGraph {
         .attr('fill', null);
 
       d3.select(event.currentTarget).select('circle')
-        .attr('fill', 'green')
+        .attr('fill', 'red')
         .attr('r', 6)
 
       d3.select(event.currentTarget).select('text')
-        .attr('fill', 'green');
+        .attr('fill', 'red');
     });
 
     this.simulation = d3.forceSimulation(nodes)
