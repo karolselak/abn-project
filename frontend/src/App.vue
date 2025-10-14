@@ -1,116 +1,183 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { ForceGraph, ForceGraphOptions, Link } from './ForceGraph';
 
 interface Node {
   name: string;
-  description: number;
+  description: string | number;
   parent: string;
+  selectioned?: boolean;
 }
 
-const chartWrapper = ref<HTMLDivElement | null>(null)
-let graph: ForceGraph | null = null
+const ENDPOINT = 'http://localhost:4001/';
 
-const ENDPOINT = 'http://localhost:4001/'
+const chartWrapper = ref<HTMLDivElement | null>(null);
+let graph: ForceGraph | null = null;
 
-const loading = ref(false)
-const error = ref<string | null>(null)
-let nodesMap = ref<Map<string, Node>>(null)
-let abortController: AbortController = null
-let selectedNode = ref<Node | null>(null);
+const loading = ref(false);
+const error = ref<string | null>(null);
+const nodesMap = ref<Map<string, Node> | null>(null);
+let abortController: AbortController | null = null;
 
-function normalizeToLinks(payload: Node[]): Link[] {
-  return payload
-    .filter(item => item.parent !== "")
-    .map(item => ({
-      source: item.parent,
-      target: item.name,
-      type: "parent-child",
-    }));
-}
+const selectedNode = ref<Node | null>(null);
+let resizeObserver: ResizeObserver | null = null;
 
-async function loadData() {
-  loading.value = true
-  error.value = null
-  abortController?.abort()
-  abortController = new AbortController()
+async function loadData(): Promise<Node[] | undefined> {
+  loading.value = true;
+  error.value = null;
+  abortController?.abort();
+  abortController = new AbortController();
 
   try {
     const res = await fetch(ENDPOINT, {
       method: 'GET',
       headers: { Accept: 'application/json' },
-      signal: abortController.signal
-    })
+      signal: abortController.signal,
+    });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}`)
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
     }
 
-    const json = await res.json()
-
-    return json.data;
+    const json = await res.json();
+    return json.data as Node[];
   } catch (e: any) {
-    error.value = e?.message ?? 'Data fetch error'
+    error.value = e?.message ?? 'Data fetch error';
   } finally {
-    loading.value = false
+    loading.value = false;
+  }
+}
+
+function renderGraph(nodes: Node[]) {
+  ensureGraph();
+  const links = normalizeToLinks(nodes);
+  nodesMap.value = new Map(nodes.map(n => [n.name, n]));
+  graph?.render(links);
+}
+
+function ensureGraph() {
+  if (!graph && chartWrapper.value) {
+    const { clientWidth, clientHeight } = chartWrapper.value;
+
+    graph = new ForceGraph(chartWrapper.value, {
+      width: clientWidth,
+      height: clientHeight,
+      arcBend: 0.4,
+      arrowAngleOffset: -10,
+      onNodeClick,
+    });
+
+    resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        graph?.resize(width, height);
+      }
+    });
+
+    resizeObserver.observe(chartWrapper.value);
+  }
+}
+
+function normalizeToLinks(payload: Node[]): Link[] {
+  return payload
+    .filter(item => item.parent !== '')
+    .map(item => ({
+      source: item.parent,
+      target: item.name,
+      type: 'parent-child',
+    }));
+}
+
+async function refresh() {
+  if (loading.value) {
+    return;
+  }
+
+  const nodes = await loadData();
+
+  if (nodes) {
+    renderGraph(nodes);
   }
 }
 
 function onNodeClick(id: string) {
-  selectedNode.value = nodesMap.get(id)
+  const map = nodesMap.value;
+
+  if (!map) {
+    return;
+  }
+
+  selectedNode.value = map.get(id) ?? null;
+  const next = new Map<string, Node>();
+
+  for (const [key, node] of map.entries()) {
+    next.set(key, { ...node, selectioned: key === id });
+  }
+
+  nodesMap.value = next;
 }
+
+function getGraphValuesToWatch() {
+  if (!nodesMap.value) {
+    return [];
+  }
+
+  return Array.from(nodesMap.value.values()).map(n => ({
+    id: n.name,
+    selectioned: Boolean(n.selectioned),
+  }));
+}
+
+function setSelectionOnGraph(arr: { id: string; selectioned: boolean }[]) {
+  const ids = arr.filter(n => n.selectioned).map(n => n.id);
+  graph?.setSelection(ids);
+}
+
+watch(getGraphValuesToWatch, setSelectionOnGraph, { deep: true, immediate: true });
 
 onMounted(async () => {
   if (!chartWrapper.value) {
-    return
+    return;
   }
 
-  graph = new ForceGraph(chartWrapper.value, {
-    arcBend: 0.4,
-    arrowAngleOffset: -10,
-    onNodeClick: onNodeClick,
-  } as ForceGraphOptions)
-
-  const nodes = await loadData()
-  const links = normalizeToLinks(nodes)
-  nodesMap = new Map(nodes.map(item => [item.name, item]))
-  graph?.render(links)
-})
+  await refresh();
+});
 
 onUnmounted(() => {
-  abortController?.abort()
-  graph?.destroy()
-})
-
+  abortController?.abort();
+  resizeObserver?.disconnect();
+  graph?.destroy();
+});
 </script>
 
 <template>
   <div class="wrapper">
     <aside class="sidebar">
       <h1>Graph viewer</h1>
-      <div>
-        <button @click="() => (loading ? null : (error = null, (async () => await (loadData()))()))" :disabled="loading">
+      <div class="actions">
+        <button @click="refresh" :disabled="loading">
           {{ loading ? 'Loading…' : 'Refresh' }}
         </button>
-        <span v-if="error" style="color: #c00;">Error: {{ error }}</span>
+        <span v-if="error" class="error">Error: {{ error }}</span>
       </div>
-      <div v-if="selectedNode">
+
+      <div v-if="selectedNode" class="details">
         <p><strong>Name:</strong> {{ selectedNode.name }}</p>
         <p><strong>Description:</strong> {{ selectedNode.description }}</p>
         <p><strong>Parent:</strong> {{ selectedNode.parent || '-' }}</p>
       </div>
     </aside>
 
-    <main class="chartWrapper" ref="chartWrapper">
-    </main>
+    <main class="chartWrapper" ref="chartWrapper"></main>
   </div>
 </template>
 
 <style>
 body {
-  margin: 0px !important;
+  margin: 0 !important;
 }
 </style>
+
 <style scoped>
 * {
   font-family: sans-serif;
@@ -124,13 +191,19 @@ body {
   width: 250px;
   padding: 15px;
   border-right: 1px solid #ccc;
-  background-color: #e7e7e7ff;
+  background-color: #f5f5f5;
+}
+.error {
+  color: #c00;
+}
+.details {
+  margin-top: 12px;
 }
 .chartWrapper {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  position: relative; /* wygodne w wielu przypadkach */
+  position: relative;
 }
 .chartWrapper :deep(svg) {
   width: 100%;
