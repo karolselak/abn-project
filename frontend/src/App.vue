@@ -40,6 +40,7 @@ async function loadData(): Promise<Node[] | undefined> {
     }
 
     const json = await res.json();
+
     return json.data as Node[];
   } catch (e: any) {
     error.value = e?.message ?? 'Data fetch error';
@@ -56,26 +57,26 @@ function renderGraph(nodes: Node[]) {
 }
 
 function ensureGraph() {
-  if (!graph && chartWrapper.value) {
-    const { clientWidth, clientHeight } = chartWrapper.value;
-
-    graph = new ForceGraph(chartWrapper.value, {
-      width: clientWidth,
-      height: clientHeight,
-      arcBend: 0.4,
-      arrowAngleOffset: -10,
-      onNodeClick,
-    });
-
-    resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        graph?.resize(width, height);
-      }
-    });
-
-    resizeObserver.observe(chartWrapper.value);
+  if (graph || !chartWrapper.value) {
+    return;
   }
+
+  const { clientWidth, clientHeight } = chartWrapper.value;
+
+  graph = new ForceGraph(chartWrapper.value, {
+    width: clientWidth,
+    height: clientHeight,
+    arcBend: 0.4,
+    arrowAngleOffset: -10,
+    onNodeClick,
+  });
+
+  resizeObserver = new ResizeObserver(entries => {
+    const { width, height } = entries[0].contentRect; // we observe only one element - chartWrapper
+    graph?.resize(width, height);
+  });
+
+  resizeObserver.observe(chartWrapper.value);
 }
 
 function normalizeToLinks(payload: Node[]): Link[] {
@@ -148,17 +149,19 @@ onUnmounted(() => {
   resizeObserver?.disconnect();
   graph?.destroy();
 });
+
 </script>
 
 <template>
   <div class="wrapper">
     <aside class="sidebar">
       <h1>Graph viewer</h1>
+
       <div class="actions">
         <button @click="refresh" :disabled="loading">
           {{ loading ? 'Loading…' : 'Refresh' }}
         </button>
-        <span v-if="error" class="error">Error: {{ error }}</span>
+        <div v-if="error" class="error">Error: {{ error }}</div>
       </div>
 
       <div v-if="selectedNode" class="details">
