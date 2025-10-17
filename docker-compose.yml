@@ -35,7 +35,7 @@ services:
     volumes:
       - neo4j-data:/data
       - neo4j-logs:/logs
-      - ./neo4j-plugins:/plugins
+      - ./neo4j-support:/plugins
     environment:
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
       - NEO4J_dbms_security_procedures_whitelist=apoc.*
@@ -50,7 +50,7 @@ services:
     volumes:
       - neo4j-test-data:/data
       - neo4j-test-logs:/logs
-      - ./neo4j-plugins:/plugins
+      - ./neo4j-support:/plugins
     environment:
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*
       - NEO4J_dbms_security_procedures_whitelist=apoc.*

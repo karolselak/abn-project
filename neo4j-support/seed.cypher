@@ -1,0 +1,13 @@
+CREATE (:Element {name: 'A', description: 'This is a description of A'});
+CREATE (:Element {name: 'B', description: 'This is a description of B'});
+CREATE (:Element {name: 'C', description: 'This is a description of C'});
+CREATE (:Element {name: 'D', description: 'This is a description of D'});
+CREATE (:Element {name: 'B-1', description: 'This is a description of B-1'});
+CREATE (:Element {name: 'B-2', description: 'This is a description of B-2'});
+CREATE (:Element {name: 'B-3', description: 'This is a description of B-3'});
+MATCH (parent:Element {name: 'A'}), (child:Element {name: 'B'}) CREATE (parent)-[:HAS_CHILD]->(child);
+MATCH (parent:Element {name: 'A'}), (child:Element {name: 'C'}) CREATE (parent)-[:HAS_CHILD]->(child);
+MATCH (parent:Element {name: 'A'}), (child:Element {name: 'D'}) CREATE (parent)-[:HAS_CHILD]->(child);
+MATCH (parent:Element {name: 'B'}), (child:Element {name: 'B-1'}) CREATE (parent)-[:HAS_CHILD]->(child);
+MATCH (parent:Element {name: 'B'}), (child:Element {name: 'B-2'}) CREATE (parent)-[:HAS_CHILD]->(child);
+MATCH (parent:Element {name: 'B'}), (child:Element {name: 'B-3'}) CREATE (parent)-[:HAS_CHILD]->(child);

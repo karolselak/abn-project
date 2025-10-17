@@ -10,7 +10,7 @@ export interface ForceGraphOptions {
   zoom?: number;
   arcBend?: number; // 0..1 for arc curvature
   arrowAngleOffset?: number; // degrees
-  onNodeClick?: (id: string) => void;
+  onNodeClick?: (id: string, event?: MouseEvent) => void;
 }
 
 export class ForceGraph {
@@ -157,7 +157,9 @@ export class ForceGraph {
     this.nodeSelection
       .append('circle')
       .attr('r', 4)
-      .attr('cursor', 'pointer');
+      .attr('cursor', 'pointer')
+      .attr('stroke', 'rgba(0,0,0,0)')
+      .attr('stroke-width', 30); // invisible stroke for easier interaction
 
     // append text label to each node <g>
     this.nodeSelection
@@ -167,8 +169,8 @@ export class ForceGraph {
       .text((d: NodeDatum) => d.id)
       .attr('cursor', 'pointer'); // show as clickable
 
-    this.nodeSelection.on('click', (_event: any, node: { id: string }) => {
-      this.options.onNodeClick(node.id);
+    this.nodeSelection.on('click', (event: MouseEvent, node: { id: string }) => {
+      this.options.onNodeClick(node.id, event)
     });
 
     this.nodeSelection.call(this.dragBehavior());

@@ -19,7 +19,7 @@ const error = ref<string | null>(null);
 const nodesMap = ref<Map<string, Node> | null>(null);
 let abortController: AbortController | null = null;
 
-const selectedNode = ref<Node | null>(null);
+const selectedNodes = ref<Node[] | null>(null);
 let resizeObserver: ResizeObserver | null = null;
 
 async function loadData(): Promise<Node[] | undefined> {
@@ -101,21 +101,35 @@ async function refresh() {
   }
 }
 
-function onNodeClick(id: string) {
-  const map = nodesMap.value;
+function onNodeClick(id: string, event?: MouseEvent) {
+  const existingNodesMap = nodesMap.value;
 
-  if (!map) {
+  if (!existingNodesMap) {
     return;
   }
 
-  selectedNode.value = map.get(id) ?? null;
-  const next = new Map<string, Node>();
+  const clickedNode = existingNodesMap.get(id);
+  const isShift = Boolean(event?.shiftKey);
+  let nextNodesMap: Map<string, Node>;
 
-  for (const [key, node] of map.entries()) {
-    next.set(key, { ...node, selectioned: key === id });
+  if (isShift) {
+    nextNodesMap = new Map<string, Node>(existingNodesMap);
+
+    if (clickedNode) {
+      nextNodesMap.set(id, { ...clickedNode, selectioned: !clickedNode.selectioned });
+    }
+  } else {
+    nextNodesMap = new Map<string, Node>();
+    const multiSelection = Array.from(existingNodesMap).map(n => n[1]).filter(n => n.selectioned).length > 1;
+    const selectClickedNode = multiSelection || !clickedNode?.selectioned;
+
+    for (const [key, node] of existingNodesMap.entries()) {
+      nextNodesMap.set(key, { ...node, selectioned: key === id && selectClickedNode });
+    }
   }
 
-  nodesMap.value = next;
+  nodesMap.value = nextNodesMap;
+  selectedNodes.value = Array.from(nextNodesMap).map(n => n[1]).filter(n => n.selectioned);
 }
 
 function getGraphValuesToWatch() {
@@ -164,11 +178,16 @@ onUnmounted(() => {
         <div v-if="error" class="error">Error: {{ error }}</div>
       </div>
 
-      <div v-if="selectedNode" class="details">
-        <p><strong>Name:</strong> {{ selectedNode.name }}</p>
-        <p><strong>Description:</strong> {{ selectedNode.description }}</p>
-        <p><strong>Parent:</strong> {{ selectedNode.parent || '-' }}</p>
+      <div v-if="selectedNodes?.length > 0" class="selectedNodesInfo">
+        <div v-for="node in selectedNodes" class="details">
+          <div><strong>Node: {{ node.name }}</strong></div>
+          <div>{{ node.description }}</div>
+          <div>Parent: {{ node.parent || '-' }}</div>
+        </div>
       </div>
+      <p v-else>
+        Click on a node to select it. Hold Shift to select multiple nodes.
+      </p>
     </aside>
 
     <main class="chartWrapper" ref="chartWrapper"></main>
@@ -195,6 +214,12 @@ body {
   padding: 15px;
   border-right: 1px solid #ccc;
   background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+.selectedNodesInfo {
+  overflow-y: auto;
+  flex: 1 1 auto;
 }
 .error {
   color: #c00;
