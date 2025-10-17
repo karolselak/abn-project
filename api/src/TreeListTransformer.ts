@@ -1,46 +1,16 @@
-import { Injectable } from '@nestjs/common';
-
-const neo4j = require('neo4j-driver');
-
-const uri = 'bolt://neo4j:7687'
-const user = '';
-const password = '';
-const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
-const session = driver.session();
-
-@Injectable()
-export class AppService {
-  async getAll(): Promise<string | void> {
-    try {
-      const result = await session.run(`
-        MATCH (n)
-        OPTIONAL MATCH (n)-[r]->(m)
-        RETURN n, r, m
-      `);
-
-      const rawRecords = result.records.map(record => record.toObject());
-      const transformedRows = (new TreeListTransformer()).transform(rawRecords);
-
-      return JSON.stringify(transformedRows);
-    } catch (error) {
-      console.error('Error during Neo4j connection:', error);
-    }
-  }
-}
-
-interface TreeNode {
+export interface TreeNode {
   id: string;
   name: string;
   description: string;
 }
 
-interface TreeListItem {
+export interface TreeListItem {
   name: string;
   description: string;
   parent: string;
 }
 
-class TreeListTransformer {
+export class TreeListTransformer {
   private nodesById = new Map<string, TreeNode>();
   private parentByChildId = new Map<string, string>();
 

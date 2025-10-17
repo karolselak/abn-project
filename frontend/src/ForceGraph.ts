@@ -5,8 +5,6 @@ type NodeDatum = d3.SimulationNodeDatum & { id: string };
 type LinkDatum = d3.SimulationLinkDatum<NodeDatum> & { type: string };
 
 export interface ForceGraphOptions {
-  width?: string | number;
-  height?: string | number;
   basicViewBoxWidth?: number;
   basicViewBoxHeight?: number;
   zoom?: number;
@@ -29,8 +27,6 @@ export class ForceGraph {
     this.container = container;
 
     this.options = {
-      width: opts?.width ?? '100%',
-      height: opts?.height ?? '100%',
       basicViewBoxWidth: opts?.basicViewBoxWidth ?? 600,
       basicViewBoxHeight: opts?.basicViewBoxHeight ?? 600,
       zoom: opts?.zoom ?? 1.5,
@@ -103,7 +99,8 @@ export class ForceGraph {
   }
 
   private setupSvgElement(viewBoxWidth: number, viewBoxHeight: number): void {
-    const { width, height } = this.options;
+    const width = '100%';
+    const height = '100%';
 
     this.container.innerHTML = '';
     this.svg = d3

@@ -1,4 +1,4 @@
-FROM node:18.8.0-bullseye
+FROM node:20.10.0-bullseye
 
 RUN npm install -g @nestjs/cli
 
