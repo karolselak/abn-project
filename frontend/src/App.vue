@@ -9,7 +9,8 @@ interface Node {
   selectioned?: boolean;
 }
 
-const ENDPOINT = process.env.NODE_ENV === 'production' ? 'http://20.215.225.194:4000/' : 'http://localhost:4001/';
+const ENV = import.meta.env.VITE_ENVIRONMENT || 'development';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001/';
 
 const chartWrapper = ref<HTMLDivElement | null>(null);
 let graph: ForceGraph | null = null;
@@ -29,7 +30,7 @@ async function loadData(): Promise<Node[] | undefined> {
   abortController = new AbortController();
 
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch(API_URL, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       signal: abortController.signal,
@@ -169,8 +170,10 @@ onUnmounted(() => {
 <template>
   <div class="wrapper">
     <aside class="sidebar">
-      <h1>Graph viewer</h1>
-
+      <div class="environmentInfo">
+        environment: {{ ENV }}
+      </div>
+      <h2>Graph viewer</h2>
       <div class="actions">
         <button @click="refresh" :disabled="loading">
           {{ loading ? 'Loading…' : 'Refresh' }}
@@ -221,8 +224,14 @@ body {
   overflow-y: auto;
   flex: 1 1 auto;
 }
+.environmentInfo {
+  font-size: 11px;
+  color: #555;
+}
 .error {
   color: #c00;
+  margin-top: 8px;
+  font-size: 11px;
 }
 .details {
   margin-top: 12px;
