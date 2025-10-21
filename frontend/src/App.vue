@@ -9,7 +9,7 @@ interface Node {
   selectioned?: boolean;
 }
 
-const ENDPOINT = 'http://localhost:4001/';
+const ENDPOINT = process.env.NODE_ENV === 'production' ? 'http://20.215.225.194:4000/' : 'http://localhost:4001/';
 
 const chartWrapper = ref<HTMLDivElement | null>(null);
 let graph: ForceGraph | null = null;
